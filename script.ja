@@ -1,0 +1,498 @@
+/* MediaDown - CapCut Downloader */
+"use strict";
+
+document.addEventListener("DOMContentLoaded", () => {
+
+const form = document.getElementById("downloadForm");
+const input = document.getElementById("mediaUrl");
+const fetchBtn = document.getElementById("fetchBtn");
+const pasteBtn = document.getElementById("pasteBtn");
+const loadingBox = document.getElementById("loadingBox");
+const errorBox = document.getElementById("errorBox");
+const errorMessage = document.getElementById("errorMessage");
+const noticeBox = document.getElementById("noticeBox");
+const results = document.getElementById("results");
+const mediaTitle = document.getElementById("mediaTitle");
+const photoPreview = document.getElementById("photoPreview");
+const videoPreview = document.getElementById("videoPreview");
+const noVideoPreview = document.getElementById("noVideoPreview");
+const photoQuality = document.getElementById("photoQuality");
+const videoQuality = document.getElementById("videoQuality");
+const photoDownloadBtn = document.getElementById("photoDownloadBtn");
+const videoDownloadBtn = document.getElementById("videoDownloadBtn");
+const themeToggle = document.getElementById("themeToggle");
+
+let media = { photos: [], videos: [] };
+
+const show = el => el && el.classList.remove("hidden");
+const hide = el => el && el.classList.add("hidden");
+
+function showError(message) {
+    if (!errorBox || !errorMessage) return;
+    errorMessage.textContent = message;
+    show(errorBox);
+}
+
+function clearState() {
+    hide(errorBox);
+    hide(noticeBox);
+    hide(results);
+
+    media = { photos: [], videos: [] };
+
+    photoPreview.removeAttribute("src");
+    videoPreview.pause();
+    videoPreview.removeAttribute("src");
+    videoPreview.load();
+}
+
+function setLoading(status) {
+    if (status) {
+        show(loadingBox);
+        fetchBtn.disabled = true;
+        fetchBtn.querySelector(".btn-text").textContent = "Fetching...";
+    } else {
+        hide(loadingBox);
+        fetchBtn.disabled = false;
+        fetchBtn.querySelector(".btn-text").textContent = "Get Media";
+    }
+}
+
+function isCapCutUrl(value) {
+    try {
+        const url = new URL(value);
+        return (
+            url.protocol === "https:" &&
+            /(^|\.)capcut\.com$/i.test(url.hostname)
+        );
+    } catch {
+        return false;
+    }
+}
+
+/* Paste URL */
+pasteBtn.addEventListener("click", async () => {
+    try {
+        const text = await navigator.clipboard.readText();
+
+        if (!text.trim()) {
+            showError("Clipboard is empty.");
+            return;
+        }
+
+        input.value = text.trim();
+        hide(errorBox);
+
+    } catch {
+        const text = prompt("Paste your CapCut URL:");
+
+        if (text) {
+            input.value = text.trim();
+        }
+    }
+});
+
+/* Theme */
+themeToggle.addEventListener("click", () => {
+    document.body.classList.toggle("light-theme");
+
+    const light = document.body.classList.contains("light-theme");
+
+    themeToggle.textContent = light ? "☾" : "☀";
+
+    try {
+        localStorage.setItem(
+            "mediadowntheme",
+            light ? "light" : "dark"
+        );
+    } catch {}
+});
+
+/* Load saved theme */
+try {
+    if (localStorage.getItem("mediadowntheme") === "light") {
+        document.body.classList.add("light-theme");
+        themeToggle.textContent = "☾";
+    }
+} catch {}
+
+/* Extract media URLs from response */
+function collectMedia(data) {
+
+    const photos = [];
+    const videos = [];
+    const seen = new Set();
+
+    function add(url, label, type) {
+
+        if (typeof url !== "string") return;
+        if (!/^https?:\/\//i.test(url)) return;
+
+        const cleanUrl = url.replace(/&amp;/g, "&");
+
+        if (seen.has(cleanUrl)) return;
+
+        seen.add(cleanUrl);
+
+        const list = type === "photo" ? photos : videos;
+
+        list.push({
+            id: `${type}-${list.length}`,
+            url: cleanUrl,
+            label: label || type
+        });
+    }
+
+    function walk(value, key = "") {
+
+        if (!value) return;
+
+        if (Array.isArray(value)) {
+            value.forEach(item => walk(item, key));
+            return;
+        }
+
+        if (typeof value === "object") {
+            Object.entries(value).forEach(([k, v]) => {
+                walk(v, k);
+            });
+            return;
+        }
+
+        if (typeof value !== "string") return;
+        if (!/^https?:\/\//i.test(value)) return;
+
+        const name = key.toLowerCase();
+
+        const isImage =
+            /(image|photo|cover|thumb|poster|picture)/i.test(name) ||
+            /\.(jpg|jpeg|png|webp)(\?|$)/i.test(value);
+
+        const isVideo =
+            /(video|play|download|mp4|src|url)/i.test(name) &&
+            !isImage;
+
+        if (isImage) {
+            add(value, key || "Photo", "photo");
+        } else if (
+            isVideo ||
+            /\.(mp4|mov|webm)(\?|$)/i.test(value)
+        ) {
+            add(value, key || "Video", "video");
+        }
+    }
+
+    walk(data);
+
+    return { photos, videos };
+}
+
+/* Get title */
+function getTitle(data) {
+
+    if (!data || typeof data !== "object") {
+        return "CapCut Media";
+    }
+
+    const candidates = [
+        data.title,
+        data.name,
+        data.caption,
+        data.desc,
+        data.description,
+        data.data?.title,
+        data.data?.name,
+        data.result?.title
+    ];
+
+    return candidates.find(
+        value => typeof value === "string" && value.trim()
+    ) || "CapCut Media";
+}
+
+/* Quality selector */
+function fillSelect(select, items, emptyText) {
+
+    select.innerHTML = "";
+
+    if (!items.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = emptyText;
+        select.appendChild(option);
+        return;
+    }
+
+    items.forEach((item, index) => {
+
+        const option = document.createElement("option");
+
+        option.value = item.id;
+        option.textContent = item.label || `Media ${index + 1}`;
+
+        select.appendChild(option);
+    });
+}
+
+/* Display results */
+function render(data) {
+
+    const found = collectMedia(data);
+
+    media = found;
+
+    mediaTitle.textContent = getTitle(data);
+
+    if (media.photos.length) {
+
+        photoPreview.src = media.photos[0].url;
+        photoPreview.alt = "CapCut Photo Preview";
+
+    } else {
+
+        photoPreview.removeAttribute("src");
+    }
+
+    if (media.videos.length) {
+
+        videoPreview.src = media.videos[0].url;
+        hide(noVideoPreview);
+
+    } else {
+
+        videoPreview.removeAttribute("src");
+        show(noVideoPreview);
+    }
+
+    videoPreview.load();
+
+    fillSelect(
+        photoQuality,
+        media.photos,
+        "No photo available"
+    );
+
+    fillSelect(
+        videoQuality,
+        media.videos,
+        "No video available"
+    );
+
+    photoDownloadBtn.disabled = !media.photos.length;
+    videoDownloadBtn.disabled = !media.videos.length;
+
+    if (!media.photos.length && !media.videos.length) {
+        throw new Error(
+            "No downloadable media found. This CapCut link may not be supported."
+        );
+    }
+
+    show(results);
+
+    results.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+}
+
+/* Main downloader */
+form.addEventListener("submit", async event => {
+
+    event.preventDefault();
+
+    clearState();
+
+    const url = input.value.trim();
+
+    if (!url) {
+        showError("Please enter a CapCut link.");
+        return;
+    }
+
+    if (!isCapCutUrl(url)) {
+        showError("Please enter a valid CapCut URL.");
+        return;
+    }
+
+    setLoading(true);
+
+    try {
+
+        if (
+            !window.btch ||
+            typeof window.btch.capcut !== "function"
+        ) {
+            throw new Error(
+                "Downloader library failed to load. Please refresh the page."
+            );
+        }
+
+        const response = await window.btch.capcut(url);
+
+        if (!response) {
+            throw new Error("No response from downloader service.");
+        }
+
+        if (
+            response.success === false ||
+            response.status === false
+        ) {
+            throw new Error(
+                response.message ||
+                response.error ||
+                "Unable to process this CapCut link."
+            );
+        }
+
+        render(response);
+
+        noticeBox.textContent =
+            "Media extraction uses a third-party service. Some links may not work.";
+
+        show(noticeBox);
+
+    } catch (err) {
+
+        console.error("MediaDown Error:", err);
+
+        showError(
+            err.message ||
+            "Unable to extract media. Please try another public CapCut link."
+        );
+
+    } finally {
+
+        setLoading(false);
+    }
+});
+
+/* Safe filename */
+function safeName(name) {
+
+    return String(name || "medi adown-download")
+        .replace(/[\\/:*?"<>|]/g, "_")
+        .replace(/\s+/g, "_")
+        .slice(0, 100);
+}
+
+/* Download media */
+async function downloadItem(item, button, defaultName) {
+
+    if (!item) return;
+
+    const oldText = button.textContent;
+
+    button.disabled = true;
+    button.textContent = "Preparing Download...";
+
+    try {
+
+        const response = await fetch(item.url, {
+            mode: "cors"
+        });
+
+        if (!response.ok) {
+            throw new Error("Direct download blocked.");
+        }
+
+        const blob = await response.blob();
+
+        if (!blob.size) {
+            throw new Error("Empty media file.");
+        }
+
+        const objectUrl = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+
+        link.href = objectUrl;
+        link.download = safeName(
+            item.fileName || defaultName
+        );
+
+        document.body.appendChild(link);
+
+        link.click();
+
+        link.remove();
+
+        setTimeout(() => {
+            URL.revokeObjectURL(objectUrl);
+        }, 45000);
+
+        button.textContent = "✓ Download Started";
+
+    } catch (err) {
+
+        window.open(
+            item.url,
+            "_blank",
+            "noopener,noreferrer"
+        );
+
+        button.textContent = "Opened Media Link";
+
+        noticeBox.textContent =
+            "Direct download is blocked by the media server. The media link was opened in a new tab.";
+
+        show(noticeBox);
+
+    }
+
+    setTimeout(() => {
+
+        button.textContent = oldText;
+        button.disabled = false;
+
+    }, 2200);
+}
+
+/* Photo download */
+photoDownloadBtn.addEventListener("click", () => {
+
+    const item = media.photos.find(
+        x => x.id === photoQuality.value
+    );
+
+    if (item) {
+        downloadItem(
+            item,
+            photoDownloadBtn,
+            "capcut-photo.jpg"
+        );
+    }
+});
+
+/* Video download */
+videoDownloadBtn.addEventListener("click", () => {
+
+    const item = media.videos.find(
+        x => x.id === videoQuality.value
+    );
+
+    if (item) {
+        downloadItem(
+            item,
+            videoDownloadBtn,
+            "capcut-video.mp4"
+        );
+    }
+});
+
+/* Preview errors */
+photoPreview.addEventListener("error", () => {
+    photoPreview.removeAttribute("src");
+});
+
+videoPreview.addEventListener("error", () => {
+    show(noVideoPreview);
+});
+
+/* Current year */
+const yearElement = document.getElementById("currentYear");
+
+if (yearElement) {
+    yearElement.textContent = new Date().getFullYear();
+}
+
+});
