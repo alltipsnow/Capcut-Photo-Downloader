@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#101322">
+<title>MediaDown - CapCut Media Downloader</title>
+<meta name="description" content="Download publicly accessible CapCut photos and videos you have permission to use.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+<header class="header">
+<a href="#" class="logo"><span class="logo-icon">M</span><span>Media<span class="logo-highlight">Down</span></span></a>
+<div class="header-actions">
+<span class="status-badge"><span class="status-dot"></span>CapCut Downloader</span>
+<button class="theme-btn" id="themeToggle" aria-label="Toggle theme">☀</button>
+</div>
+</header>
+
+<div class="ad-slot top-ad"><span>ADVERTISEMENT</span><p>Top Banner Ad Placement</p></div>
+
+<main>
+<section class="hero">
+<div class="hero-badge">✦ SIMPLE • FAST • FREE</div>
+<h1>Download Your <span class="gradient-text">CapCut Media</span></h1>
+<p class="hero-description">Paste a public CapCut template or shared-media link to fetch available photos and videos.</p>
+
+<div class="downloader-card">
+<div class="input-label"><span>Enter CapCut URL</span><span class="input-hint">Public links only</span></div>
+<form id="downloadForm">
+<div class="input-wrapper">
+<span>🔗</span>
+<input type="url" id="mediaUrl" placeholder="Paste your CapCut link here..." required>
+<button type="button" id="pasteBtn" class="paste-btn">📋 Paste</button>
+</div>
+<button type="submit" id="fetchBtn" class="primary-btn"><span class="btn-text">Get Media</span><span>→</span></button>
+</form>
+<div class="privacy-note">🔒 Use only media you own or have permission to download.</div>
+</div>
+
+<div class="loading-box hidden" id="loadingBox"><div class="spinner"></div><h3>Fetching your CapCut media...</h3><p>Please wait while we process your public link.</p></div>
+<div class="error-box hidden" id="errorBox" role="alert"><span class="error-icon">!</span><div><strong>Unable to fetch media</strong><p id="errorMessage"></p></div></div>
+<div class="notice-box hidden" id="noticeBox"></div>
+
+<section class="results hidden" id="results">
+<div class="result-heading"><div><span class="section-kicker">YOUR MEDIA</span><h2>Media Found!</h2></div><span class="success-badge">✓ Ready</span></div>
+<div class="media-title" id="mediaTitle">CapCut Media</div>
+<div class="preview-grid">
+<div class="preview-card"><div class="preview-label"><span>PHOTO PREVIEW</span><span>▧</span></div><div class="photo-preview" id="photoPreviewWrap"><img id="photoPreview" alt="Photo preview"></div></div>
+<div class="preview-card"><div class="preview-label"><span>VIDEO PREVIEW</span><span>▶</span></div><div class="video-preview"><video id="videoPreview" controls preload="metadata" playsinline></video><div id="noVideoPreview" class="no-preview">Video preview unavailable</div></div></div>
+</div>
+<div class="download-grid">
+<div class="download-card"><div class="download-card-icon photo-icon">▧</div><h3>Photo Download</h3><p>Download an available CapCut cover or image.</p><label for="photoQuality">Select Photo</label><select id="photoQuality"><option value="">No photo available</option></select><button type="button" id="photoDownloadBtn" class="download-btn photo-download-btn" disabled>↓ Download Photo</button></div>
+<div class="download-card"><div class="download-card-icon video-icon">▶</div><h3>Video Download</h3><p>Choose an available CapCut video file.</p><label for="videoQuality">Select Video</label><select id="videoQuality"><option value="">No video available</option></select><button type="button" id="videoDownloadBtn" class="download-btn video-download-btn" disabled>↓ Download Video</button></div>
+</div>
+<div class="ad-slot download-ad"><span>ADVERTISEMENT</span><p>Below Download Button Ad Placement</p></div>
+</section>
+</section>
+
+<div class="ad-slot sidebar-ad"><span>ADVERTISEMENT</span><p>Sidebar Ad Placement</p></div>
+
+<section class="features">
+<div class="section-heading"><span class="section-kicker">WHY USE US?</span><h2>Everything You Need</h2><p>Simple tools designed for a smooth downloading experience.</p></div>
+<div class="feature-grid">
+<div class="feature-card"><div class="feature-icon">⚡</div><h3>Fast Processing</h3><p>Fetch available media from supported public CapCut links.</p></div>
+<div class="feature-card"><div class="feature-icon">📱</div><h3>Mobile Friendly</h3><p>Enjoy a responsive experience on phones and desktops.</p></div>
+<div class="feature-card"><div class="feature-icon">🎬</div><h3>Media Preview</h3><p>Preview available media before downloading.</p></div>
+<div class="feature-card"><div class="feature-icon">🔐</div><h3>Privacy Focused</h3><p>No account or login is requested by this website.</p></div>
+</div>
+</section>
+
+<section class="how-to">
+<div class="section-heading"><span class="section-kicker">GET STARTED</span><h2>How To Download?</h2></div>
+<div class="steps">
+<div class="step"><span>01</span><h3>Copy Link</h3><p>Copy a public CapCut template or shared-media link.</p></div>
+<div class="step"><span>02</span><h3>Paste Link</h3><p>Paste the link into the downloader input field.</p></div>
+<div class="step"><span>03</span><h3>Get Media</h3><p>Click Get Media to find available content.</p></div>
+<div class="step"><span>04</span><h3>Download</h3><p>Select the item and download it to your device.</p></div>
+</div>
+</section>
+</main>
+
+<footer class="footer">
+<a href="#" class="logo footer-logo"><span class="logo-icon">M</span><span>Media<span class="logo-highlight">Down</span></span></a>
+<p>Fast, simple and convenient CapCut media downloading.</p>
+<div class="footer-links"><a href="#">Home</a><a href="#">Privacy Policy</a><a href="#">Terms of Use</a><a href="#">Contact</a></div>
+<p class="copyright">© <span id="currentYear"></span> MediaDown. All rights reserved.</p>
+</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/btch-downloader@6.4.0/dist/browser/index.min.js"></script>
+<script src="js/script.js"></script>
+</body>
+</html>
